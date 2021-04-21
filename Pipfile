@@ -8,6 +8,7 @@ pyyaml = "*"
 composeparser = {path = "./../compose-ref"}
 
 [dev-packages]
+yapf = "*"
 
 [requires]
 python_version = "3.9"
