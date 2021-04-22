@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c7e76a40412d271973fb4af55cab9460709096f3e1a925e25033e5083cd35432"
+            "sha256": "62fe8b8784a040909d42cda5c885e644bd872254669ce9fb448d2739b9910373"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,9 +16,13 @@
         ]
     },
     "default": {
-        "composeparser": {
-            "path": "./../compose-ref",
+        "composenomadconvertor": {
+            "path": ".",
             "version": "==0.0.3"
+        },
+        "composeparser": {
+            "git": "https://github.com/uchenic/compose-ref.git",
+            "ref": "1649ea41581b950bc9c682b557f5a256add7c921"
         },
         "pyyaml": {
             "hashes": [

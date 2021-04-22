@@ -5,7 +5,8 @@ name = "pypi"
 
 [packages]
 pyyaml = "*"
-composeparser = {path = "./../compose-ref"}
+composeparser = {ref = "python_lib", git = "https://github.com/uchenic/compose-ref.git"}
+composenomadconvertor = {path = "."}
 
 [dev-packages]
 yapf = "*"

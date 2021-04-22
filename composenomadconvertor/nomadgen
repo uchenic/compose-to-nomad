@@ -1,0 +1,7 @@
+#!python
+from composenomadconvertor.produce_tasks import main
+from composenomadconvertor.arg_parser import parse
+
+if __name__ == '__main__':
+    args = parse()
+    main(args)
