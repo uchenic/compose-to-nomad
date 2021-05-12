@@ -33,6 +33,8 @@ class ComposeProcessor(object):
             'privileged':
             service['privileged']
         }
+        if service['privileged']:
+            task['user'] = 'root'
         if 'volumes' in service.keys():
             task['config']['mount'] = []
             for vol in service['volumes']:
