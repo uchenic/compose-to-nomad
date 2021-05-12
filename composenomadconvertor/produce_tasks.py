@@ -102,7 +102,7 @@ def main(args):
     filepath = str(args.compose_file.resolve())
     l = ComposeParser(filepath)
     compose_obj = l.load()
-    pr = ComposeProcessor(compose_obj)
+    pr = ComposeProcessor(compose_obj, docker_registry=args.registry_base)
     result = pr.gen_nomad_job()
     with args.nomad_job_file as f:
         f.write(json.dumps(result, indent=2))
