@@ -18,7 +18,6 @@ class ComposeProcessor(object):
         service = ServiceEntry(service)
         service.init()
         task['env'] = service.get('environment', {})
-        #TODO: process volumes
 
         task['config'] = {
             'image':
@@ -29,9 +28,16 @@ class ComposeProcessor(object):
             'network_mode':
             list(service['networks'].keys())[0],
             'network_aliases': [task_name],
-            'extra_hosts': service['extra_hosts'],
-            'privileged': service['privileged']
+            'extra_hosts':
+            service['extra_hosts'],
+            'privileged':
+            service['privileged']
         }
+        if 'volumes' in service.keys():
+            task['config']['mount'] = []
+            for vol in service['volumes']:
+                task['config']['mount'].append(vol)
+
         for x in (service['ports'] if 'ports' in service.keys() else []):
             self.ports_for_groups[group_name]['port'][x['published']] = {
                 'to': x['target'],
