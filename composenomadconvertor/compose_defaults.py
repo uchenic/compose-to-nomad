@@ -12,6 +12,8 @@ class ServiceEntry(object):
 
     def init(self):
         self.default_service['deploy'] = defaultdict()
+        self.default_service['extra_hosts']=[]
+        self.default_service['privileged']=False
         self.default_service['deploy']['resources'] = {
             'limits': {
                 'cpus': '0.5',

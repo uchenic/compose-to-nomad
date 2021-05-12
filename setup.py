@@ -9,7 +9,7 @@ setup(name='ComposeNomadConvertor',
       author_email='uchenic@protonmail.com',
       url='',
       packages=['composenomadconvertor'],
-      dependency_links=['git+https://github.com/uchenic/compose-ref.git@python_lib#egg=composeparser'],
+      dependency_links=['git+https://github.com/uchenic/compose-ref.git@python_lib#egg=ComposeParser-0.0.3-py3.9'],
       install_requires=['pyyaml'],
       scripts=['composenomadconvertor/nomadgen']
      )

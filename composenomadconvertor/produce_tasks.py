@@ -28,7 +28,9 @@ class ComposeProcessor(object):
              for x in service['ports']] if 'ports' in service.keys() else [],
             'network_mode':
             list(service['networks'].keys())[0],
-            'network_aliases': [task_name]
+            'network_aliases': [task_name],
+            'extra_hosts': service['extra_hosts'],
+            'privileged': service['privileged']
         }
         for x in (service['ports'] if 'ports' in service.keys() else []):
             self.ports_for_groups[group_name]['port'][x['published']] = {
