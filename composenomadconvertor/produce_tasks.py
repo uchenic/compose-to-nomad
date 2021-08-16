@@ -23,8 +23,8 @@ class ComposeProcessor(object):
             'image':
             service.get('image', self.docker_registry + task_name),
             'ports':
-            ['{}'.format(x['published'])
-             for x in service['ports']] if 'ports' in service.keys() else [],
+            ['{}'.format(x.get('published', ''))
+             for x in service['ports']] if 'ports' in service.keys() and len(list(filter(lambda x: 'published' in x.keys(),service['ports'] ))) else [],
             'network_mode':
             list(service['networks'].keys())[0],
             'network_aliases': [task_name],
@@ -40,10 +40,10 @@ class ComposeProcessor(object):
             for vol in service['volumes']:
                 task['config']['mount'].append(vol)
 
-        for x in (service['ports'] if 'ports' in service.keys() else []):
-            self.ports_for_groups[group_name]['port'][x['published']] = {
+        for x in (service['ports'] if 'ports' in service.keys() and len(list(filter(lambda x: 'published' in x.keys(),service['ports']))) else []):
+            self.ports_for_groups[group_name]['port'][x.get('published', '')] = {
                 'to': x['target'],
-                'static': x['published']
+                'static': x.get('published', '')
             }
         limits = service['deploy']['resources']['limits']
         task['resources'] = {
