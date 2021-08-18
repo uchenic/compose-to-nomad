@@ -62,9 +62,11 @@ class ComposeProcessor(object):
             for vol in service['volumes']:
                 if vol['type'] == 'bind' and not vol['source'].startswith('/'):
                     task['artifact'].append(self.handle_bind_mount(vol, task_name))
+                elif vol['type'] == 'volume':
+                    vol['source'] = '{}_{}'.format(group_name, vol['source'])
+                    task['config']['mount'].append(vol)
                 else:
                     task['config']['mount'].append(vol)
-
 
         for x in (service['ports'] if 'ports' in service.keys() and len(list(filter(lambda x: 'published' in x.keys(),service['ports']))) else []):
             self.ports_for_groups[group_name]['port'][x.get('published', '')] = {
@@ -92,6 +94,19 @@ class ComposeProcessor(object):
         }
         return '{}_net_init'.format(network_name), task
 
+
+    def gen_volume_task(self, volume_name,group_name):
+        task = {}
+        task['lifecycle'] = {"hook": "prestart", "sidecar": False}
+        task['driver'] = 'raw_exec'
+        task['config'] = {
+            'command':
+            '/bin/sh',
+            'args':
+            ['-c', 'docker volume create {}_{} || exit 0'.format(group_name, volume_name)]
+        }
+        return '{}_vol_init'.format(volume_name), task
+
     def gen_service_tasks(self, services, group_name=None):
         tasks = dict([
             self.gen_service_task(task_name, task, group_name)
@@ -101,11 +116,13 @@ class ComposeProcessor(object):
 
     def gen_group(self, group_name):
         group = {}
-        #TODO: add volume creation tasks
         group['task'] = self.gen_service_tasks(self.compose_obj['services'],
                                                group_name)
         network_task_name, network_task = self.gen_network_task(group_name)
         group['task'][network_task_name] = network_task
+        for vol_name in self.compose_obj['volumes'].keys():
+            volume_task_name, volume_task = self.gen_volume_task(vol_name, group_name)
+            group['task'][volume_task_name] = volume_task
         #TODO: make network ports dinamic if not specified
         group['network'] = self.ports_for_groups[group_name]
         return group_name, group
@@ -123,12 +140,25 @@ class ComposeProcessor(object):
         nomad_job['job'] = dict([self.gen_job(j_n) for j_n in [job_name]])
         return nomad_job
 
+def remove_empty_elements(d):
+    """recursively remove empty lists, empty dicts, or None elements from a dictionary"""
+
+    def empty(x):
+        return x is None or x == {} or x == []
+
+    if not isinstance(d, (dict, list)):
+        return d
+    elif isinstance(d, list):
+        return [v for v in (remove_empty_elements(v) for v in d) if not empty(v)]
+    else:
+        return {k: v for k, v in ((k, remove_empty_elements(v)) for k, v in d.items()) if not empty(v)}
+
 
 def main(args):
     filepath = str(args.compose_file.resolve())
     l = ComposeParser(filepath)
     compose_obj = l.load()
     pr = ComposeProcessor(compose_obj, docker_registry=args.registry_base, files_url_base=args.files_url_base)
-    result = pr.gen_nomad_job()
+    result = remove_empty_elements(pr.gen_nomad_job())
     with args.nomad_job_file as f:
         f.write(json.dumps(result, indent=2))
