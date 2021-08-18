@@ -1,16 +1,37 @@
 from composeparser.parse import ComposeParser
 from .compose_defaults import ServiceEntry
+from .folder_compressor import FolderCompressor
 import json
 from collections import defaultdict
+import os
+import hashlib
 
 
 class ComposeProcessor(object):
     """process parsed compose file object"""
-    def __init__(self, compose_obj, docker_registry=''):
+    def __init__(self, compose_obj, docker_registry='', files_url_base=''):
         super(ComposeProcessor, self).__init__()
         self.compose_obj = compose_obj
         self.docker_registry = docker_registry
+        self.files_url_base = files_url_base
         self.ports_for_groups = defaultdict(lambda: defaultdict(dict))
+
+    def compress_mount(self,mount, filename):
+        fpath = os.path.join(os.getcwd(), filename)
+        archiver = FolderCompressor(mount['source'], fpath)
+        archiver.archive()
+
+    def handle_bind_mount(self,mount, task_name):
+        # TODO create artifact with mountpoint as in mount
+        md=hashlib.md5()
+        md.update(mount['target'].encode('ascii'))
+        path_hash = md.hexdigest()
+        filename = "{}_{}.tar.gz".format(path_hash, task_name)
+        self.compress_mount(mount, filename)
+        return {
+            'source': self.files_url_base + filename,
+            "destination": mount['target']
+        }
 
     def gen_service_task(self, task_name, service, group_name=None):
         task = {}
@@ -37,8 +58,13 @@ class ComposeProcessor(object):
             task['user'] = 'root'
         if 'volumes' in service.keys():
             task['config']['mount'] = []
+            task['artifact'] = []
             for vol in service['volumes']:
-                task['config']['mount'].append(vol)
+                if vol['type'] == 'bind' and not vol['source'].startswith('/'):
+                    task['artifact'].append(self.handle_bind_mount(vol, task_name))
+                else:
+                    task['config']['mount'].append(vol)
+
 
         for x in (service['ports'] if 'ports' in service.keys() and len(list(filter(lambda x: 'published' in x.keys(),service['ports']))) else []):
             self.ports_for_groups[group_name]['port'][x.get('published', '')] = {
@@ -87,12 +113,12 @@ class ComposeProcessor(object):
     def gen_job(self, job_name):
         job = {}
         job['datacenters'] = ['dc1']
-        group_name = list(self.compose_obj['networks'].keys())[0]
+        group_name = list(filter(lambda x: x!= 'default',self.compose_obj['networks'].keys()))[0]
         job['group'] = dict([self.gen_group(g_n) for g_n in [group_name]])
         return job_name, job
 
     def gen_nomad_job(self):
-        job_name = list(self.compose_obj['networks'].keys())[0]
+        job_name = list(filter(lambda x: x!= 'default',self.compose_obj['networks'].keys()))[0]
         nomad_job = {}
         nomad_job['job'] = dict([self.gen_job(j_n) for j_n in [job_name]])
         return nomad_job
@@ -102,7 +128,7 @@ def main(args):
     filepath = str(args.compose_file.resolve())
     l = ComposeParser(filepath)
     compose_obj = l.load()
-    pr = ComposeProcessor(compose_obj, docker_registry=args.registry_base)
+    pr = ComposeProcessor(compose_obj, docker_registry=args.registry_base, files_url_base=args.files_url_base)
     result = pr.gen_nomad_job()
     with args.nomad_job_file as f:
         f.write(json.dumps(result, indent=2))

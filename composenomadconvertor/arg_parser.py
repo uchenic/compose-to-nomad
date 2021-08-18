@@ -13,8 +13,15 @@ def parse():
                         help="Output file")
     parser.add_argument(
         '--registry_base',
+        default='',
         help=
         'docker registry base url (for example "registry.access.redhat.com/ubi8/" )'
+    )
+    parser.add_argument(
+        '--files_url_base',
+        default='',
+        help=
+        'hosting file base on some http server (for example "http://example.com/some-path/")'
     )
 
     args = parser.parse_args()
