@@ -30,7 +30,7 @@ class ComposeProcessor(object):
         self.compress_mount(mount, filename)
         return {
             'source': self.files_url_base + filename,
-            "destination": mount['target']
+            "destination": "local{}".format(mount['target'])
         }
 
     def gen_service_task(self, task_name, service, group_name=None):
@@ -62,6 +62,11 @@ class ComposeProcessor(object):
             for vol in service['volumes']:
                 if vol['type'] == 'bind' and not vol['source'].startswith('/'):
                     task['artifact'].append(self.handle_bind_mount(vol, task_name))
+                    task['config']['mount'].append({
+                        "type":  "bind",
+                        "target" : vol['target'],
+                        "source": "local{}".format(vol['target'])
+                    })
                 elif vol['type'] == 'volume':
                     vol['source'] = '{}_{}'.format(group_name, vol['source'])
                     task['config']['mount'].append(vol)
