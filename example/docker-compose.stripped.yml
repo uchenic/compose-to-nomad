@@ -1,0 +1,61 @@
+version: '3'
+services:
+  buildbot:
+    image: buildbot/buildbot-master:master
+    environment:
+      - BUILDBOT_CONFIG_DIR=config
+      - BUILDBOT_CONFIG_URL=https://xxx/buildbot.conf.tar.gz
+      - BUILDBOT_WORKER_PORT=9989
+      - BUILDBOT_WEB_URL=https://xxx
+      - BUILDBOT_WEB_PORT=tcp:port=8010
+      - BUILDBOT_DB_URL=postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@db/{POSTGRES_DB}
+      - POSTGRES_DB=buildbot
+      - POSTGRES_PASSWORD=change_me
+      - POSTGRES_USER=buildbot
+      - DOCKER_LOGIN
+      - DOCKER_PASSWORD
+      - NOMAD_URL=http://nomad:4646/
+      - NOMAD_JOB_CONFIG_URL=https://xxx
+      - |
+        SSH_PRIVATE_KEY
+      - |
+        SSH_HOSTS_KEY
+    extra_hosts:
+      - nomad:192.168.122.76
+    networks:
+      - buildbot
+    depends_on:
+      - db
+    ports:
+      - "8010:8010"
+  db:
+    environment:
+      - POSTGRES_DB=buildbot
+      - POSTGRES_PASSWORD=change_me
+      - POSTGRES_USER=buildbot
+    image: "postgres:9.4"
+    expose:
+      - 5432
+    networks:
+      - buildbot
+
+  worker:
+    image: "buildbot/buildbot-worker:master"
+    privileged: true
+    user: root
+    environment:
+      BUILDMASTER: buildbot
+      BUILDMASTER_PORT: 9989
+      WORKERNAME: example-worker
+      WORKERPASS: pass
+      WORKER_ENVIRONMENT_BLACKLIST: DOCKER_BUILDBOT* BUILDBOT_ENV_* BUILDBOT_1* WORKER_ENVIRONMENT_BLACKLIST
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - buildbot
+
+volumes:
+  empty:
+
+networks:
+  buildbot:

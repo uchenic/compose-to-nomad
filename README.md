@@ -14,7 +14,7 @@ pip install ComposeNomadConvertor
 To process file make sure your compose file is version 3 or above.
 ```sh
 [user@host]$ nomadgen --help
-usage: nomadgen [-h] [--registry_base REGISTRY_BASE] compose_file nomad_job_file
+usage: nomadgen [-h] [--registry_base REGISTRY_BASE] [--files_url_base FILES_URL_BASE] compose_file nomad_job_file
 
 Convert docker-compose file to nomad job
 
@@ -26,7 +26,12 @@ optional arguments:
   -h, --help            show this help message and exit
   --registry_base REGISTRY_BASE
                         docker registry base url (for example "registry.access.redhat.com/ubi8/" )
+  --files_url_base FILES_URL_BASE
+                        hosting file base on some http server (for example "http://example.com/some-path/")
 ```
+
+## Example
+Look at examples folder to get some grasp of how it works
 
 ## Tips and tricks
 As you may use it against compose files that are build on local machine this tool provides flag called **registry_base**. It would be prepended to image field of the service assembled locally. And your task would be pushing the image to the registry you specified.

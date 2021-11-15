@@ -1,0 +1,138 @@
+{
+  "job": {
+    "buildbot": {
+      "datacenters": [
+        "dc1"
+      ],
+      "group": {
+        "buildbot": {
+          "task": {
+            "buildbot": {
+              "driver": "docker",
+              "env": {
+                "BUILDBOT_CONFIG_DIR": "config",
+                "BUILDBOT_CONFIG_URL": "https://xxx/buildbot.conf.tar.gz",
+                "BUILDBOT_DB_URL": "postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@db/{POSTGRES_DB}",
+                "BUILDBOT_WEB_PORT": "tcp:port=8010",
+                "BUILDBOT_WEB_URL": "https://xxx",
+                "BUILDBOT_WORKER_PORT": "9989",
+                "NOMAD_JOB_CONFIG_URL": "https://xxx",
+                "NOMAD_URL": "http://nomad:4646/",
+                "POSTGRES_DB": "buildbot",
+                "POSTGRES_PASSWORD": "change_me",
+                "POSTGRES_USER": "buildbot"
+              },
+              "config": {
+                "image": "buildbot/buildbot-master:master",
+                "ports": [
+                  "8010"
+                ],
+                "network_mode": "buildbot",
+                "network_aliases": [
+                  "buildbot"
+                ],
+                "extra_hosts": [
+                  "nomad:192.168.122.76"
+                ],
+                "privileged": false
+              },
+              "resources": {
+                "cpu": 500,
+                "memory": 256
+              }
+            },
+            "db": {
+              "driver": "docker",
+              "env": {
+                "POSTGRES_DB": "buildbot",
+                "POSTGRES_PASSWORD": "change_me",
+                "POSTGRES_USER": "buildbot"
+              },
+              "config": {
+                "image": "postgres:9.4",
+                "network_mode": "buildbot",
+                "network_aliases": [
+                  "db"
+                ],
+                "privileged": false
+              },
+              "resources": {
+                "cpu": 500,
+                "memory": 256
+              }
+            },
+            "worker": {
+              "driver": "docker",
+              "env": {
+                "BUILDMASTER": "buildbot",
+                "BUILDMASTER_PORT": "9989",
+                "WORKERNAME": "example-worker",
+                "WORKERPASS": "pass",
+                "WORKER_ENVIRONMENT_BLACKLIST": "DOCKER_BUILDBOT* BUILDBOT_ENV_* BUILDBOT_1* WORKER_ENVIRONMENT_BLACKLIST"
+              },
+              "config": {
+                "image": "buildbot/buildbot-worker:master",
+                "network_mode": "buildbot",
+                "network_aliases": [
+                  "worker"
+                ],
+                "privileged": true,
+                "mount": [
+                  {
+                    "type": "bind",
+                    "source": "/var/run/docker.sock",
+                    "target": "/var/run/docker.sock",
+                    "bind": {
+                      "create_host_path": true
+                    }
+                  }
+                ]
+              },
+              "user": "root",
+              "resources": {
+                "cpu": 500,
+                "memory": 256
+              }
+            },
+            "buildbot_net_init": {
+              "lifecycle": {
+                "hook": "prestart",
+                "sidecar": false
+              },
+              "driver": "raw_exec",
+              "config": {
+                "command": "/bin/sh",
+                "args": [
+                  "-c",
+                  "docker network create buildbot || exit 0"
+                ]
+              }
+            },
+            "empty_vol_init": {
+              "lifecycle": {
+                "hook": "prestart",
+                "sidecar": false
+              },
+              "driver": "raw_exec",
+              "config": {
+                "command": "/bin/sh",
+                "args": [
+                  "-c",
+                  "docker volume create buildbot_empty || exit 0"
+                ]
+              }
+            }
+          },
+          "network": {
+            "port": {
+              "8010": {
+                "to": 8010,
+                "static": 8010
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
